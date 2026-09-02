@@ -1,0 +1,46 @@
+loomx.loom_version="1.16-SNAPSHOT"
+
+mod.id = "wallet"
+mod.name = "Wallet"
+mod.group = "net.vulpinegames"
+mod.version = "0.1.0"
+mod.channel_tag = "-alpha.1"
+mod.description = "Server-side economy: wallets, coin items, sign shops and plots backed by MySQL."
+mod.authors = ["VulpineGames"]
+mod.contributors = []
+mod.inception_year = "2026"
+mod.license.name = "MIT"
+mod.license.url = "https://opensource.org/licenses/MIT"
+mod.license.dist = "repo"
+mod.environment = "client_and_server"
+mod.sources_url = "https://github.com/VulpineGamesNet/Wallet"
+mod.homepage_url = "https://github.com/VulpineGamesNet/Wallet"
+mod.issues_url = "https://github.com/VulpineGamesNet/Wallet/issues"
+
+[[mod.pom.developers]]
+id = "vulpinegames"
+name = "VulpineGames"
+url = "https://github.com/VulpineGamesNet"
+
+[fabric]
+deps.fabric-loader = "0.19.2"
+
+[fabric."1.20.1"]
+deps.minecraft = "1.20.1"
+deps.fabric-api = "0.92.2+1.20.1"
+
+[fabric."1.21.1"]
+deps.minecraft = "1.21.1"
+deps.fabric-api = "0.116.7+1.21.1"
+
+[forge]
+
+[forge."1.20.1"]
+deps.minecraft = "1.20.1"
+deps.forge = "47.4.0"
+
+[neoforge]
+
+[neoforge."1.21.1"]
+deps.minecraft = "1.21.1"
+deps.neoforge = "21.1.213"
