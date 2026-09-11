@@ -74,7 +74,7 @@ public class Wallet {
 		if (active == null) return false;
 		// A coin never interacts with blocks - the script canceled these too.
 		if (net.vulpinegames.wallet.coin.CoinInteractions.shouldBlockCoinUse(held)) return true;
-		if (level.getBlockState(pos).getBlock() instanceof net.minecraft.world.level.block.WallSignBlock) {
+		if (net.vulpinegames.wallet.shop.SignShop.isWallSign(level.getBlockState(pos))) {
 			return net.vulpinegames.wallet.shop.ShopInteractions.onRightClickWallSign(active, player, level, pos);
 		}
 		return false;

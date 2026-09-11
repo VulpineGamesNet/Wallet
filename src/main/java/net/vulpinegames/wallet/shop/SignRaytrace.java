@@ -2,8 +2,6 @@ package net.vulpinegames.wallet.shop;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.vulpinegames.wallet.world.Positions;
@@ -22,9 +20,8 @@ public final class SignRaytrace {
 			HitResult hr = player.pick(5, 0.0F, false);
 			if (!(hr instanceof BlockHitResult bhr) || hr.getType() != HitResult.Type.BLOCK) return null;
 			BlockPos pos = bhr.getBlockPos();
-			BlockEntity be = player.level().getBlockEntity(pos);
-			if (!(be instanceof SignBlockEntity sign)) return null;
-			if (!sign.isWaxed()) return null;
+			SignShop.Sign sign = SignShop.Sign.at(player.level(), pos);
+			if (sign == null || !sign.isWaxed()) return null;
 			String signKey = Positions.blockKey(player.level(), pos);
 			if (!cache.contains(signKey)) return null;
 			return new Hit(pos, signKey);

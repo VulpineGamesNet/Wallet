@@ -112,7 +112,9 @@ get real transactions on both backends.
 
 Same `/wallet` tree as the scripts: balance, pay, withdraw/deposit (commands
 and coin right-click), history, sign shops (`[BUY]`/`[SELL]` + price, crouch
-right-click to create), server/infinite shop conversion, admin tools.
+right-click to create; vanilla wall signs and FramedBlocks' framed wall sign
+(`framedblocks:framed_wall_sign`) both qualify), server/infinite shop
+conversion, admin tools.
 See the servers' READMEs for the player-facing docs.
 
 **Plots are deliberately NOT in this mod.** They stay a KubeJS feature: the

@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.vulpinegames.wallet.Wallet;
 import net.vulpinegames.wallet.WalletServer;
@@ -27,7 +26,7 @@ public final class ShopProtection {
 	/** True = cancel the break. */
 	public static boolean onBlockBreak(WalletServer ks, ServerPlayer player, ServerLevel level, BlockPos pos, BlockState state) {
 		String blockKey = Positions.blockKey(level, pos);
-		boolean wasSign = state.getBlock() instanceof WallSignBlock;
+		boolean wasSign = SignShop.isWallSign(state);
 		BlockPos otherHalf = wasSign ? null : SignShop.otherChestHalf(state, pos);
 
 		// Cheap set lookups first - a dirt break must not touch the DB.
@@ -183,9 +182,8 @@ public final class ShopProtection {
 		if (ks.shopCache().size() == 0) return keys;
 		for (Direction dir : Direction.Plane.HORIZONTAL) {
 			BlockPos signPos = pos.relative(dir);
-			BlockState signState = level.getBlockState(signPos);
-			if (!(signState.getBlock() instanceof WallSignBlock)) continue;
-			if (signState.getValue(WallSignBlock.FACING) != dir) continue;
+			// A wall sign hangs on this block only when its back is against it.
+			if (!pos.equals(SignShop.attachedBlockPos(level.getBlockState(signPos), signPos))) continue;
 			String signKey = Positions.blockKey(level, signPos);
 			if (ks.shopCache().contains(signKey)) keys.add(signKey);
 		}

@@ -8,7 +8,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.vulpinegames.wallet.Wallet;
 import net.vulpinegames.wallet.WalletServer;
@@ -86,14 +85,16 @@ public final class ShopInteractions {
 
 		// SHOP USAGE
 		if (existingShop == null) return false;
-		if (!(level.getBlockEntity(pos) instanceof SignBlockEntity sign) || !sign.isWaxed()) return false;
+		SignShop.Sign sign = SignShop.Sign.at(level, pos);
+		if (sign == null || !sign.isWaxed()) return false;
 
 		trade(ks, player, level, existingShop);
 		return true;
 	}
 
 	private static boolean tryCreateShop(WalletServer ks, ServerPlayer player, ServerLevel level, BlockPos pos, String signKey) {
-		if (!(level.getBlockEntity(pos) instanceof SignBlockEntity sign)) return false;
+		SignShop.Sign sign = SignShop.Sign.at(level, pos);
+		if (sign == null) return false;
 		SignShop.Parsed signData = SignShop.parseSignText(sign);
 		if (signData == null) return false;
 
