@@ -24,28 +24,33 @@ public final class HistoryDao {
 
 	public void addEntry(String playerUuid, String type, int amount, String otherPlayer, String description) {
 		try (Connection conn = db.getConnection()) {
-			try (PreparedStatement stmt = conn.prepareStatement(
-				"INSERT INTO wallet_history (player_uuid, type, amount, other_player, description) VALUES (?, ?, ?, ?, ?)")) {
-				stmt.setString(1, playerUuid);
-				stmt.setString(2, type);
-				stmt.setInt(3, amount);
-				if (otherPlayer != null) stmt.setString(4, otherPlayer);
-				else stmt.setNull(4, Types.VARCHAR);
-				if (description != null) stmt.setString(5, description);
-				else stmt.setNull(5, Types.VARCHAR);
-				stmt.executeUpdate();
-			}
-			try (PreparedStatement stmt = conn.prepareStatement(
-				"DELETE FROM wallet_history WHERE player_uuid = ? AND id NOT IN (" +
-				"  SELECT id FROM (SELECT id FROM wallet_history WHERE player_uuid = ? ORDER BY created_at DESC LIMIT ?) AS t" +
-				")")) {
-				stmt.setString(1, playerUuid);
-				stmt.setString(2, playerUuid);
-				stmt.setInt(3, MAX_HISTORY_PER_PLAYER);
-				stmt.executeUpdate();
-			}
+			addEntry(conn, playerUuid, type, amount, otherPlayer, description);
 		} catch (SQLException e) {
 			Wallet.LOGGER.error("[Wallet] addHistoryEntry error: {}", e.toString());
+		}
+	}
+
+	public void addEntry(Connection conn, String playerUuid, String type, int amount,
+	                     String otherPlayer, String description) throws SQLException {
+		try (PreparedStatement stmt = conn.prepareStatement(
+			"INSERT INTO wallet_history (player_uuid, type, amount, other_player, description) VALUES (?, ?, ?, ?, ?)")) {
+			stmt.setString(1, playerUuid);
+			stmt.setString(2, type);
+			stmt.setInt(3, amount);
+			if (otherPlayer != null) stmt.setString(4, otherPlayer);
+			else stmt.setNull(4, Types.VARCHAR);
+			if (description != null) stmt.setString(5, description);
+			else stmt.setNull(5, Types.VARCHAR);
+			stmt.executeUpdate();
+		}
+		try (PreparedStatement stmt = conn.prepareStatement(
+			"DELETE FROM wallet_history WHERE player_uuid = ? AND id NOT IN (" +
+			"  SELECT id FROM (SELECT id FROM wallet_history WHERE player_uuid = ? ORDER BY created_at DESC LIMIT ?) AS t" +
+			")")) {
+			stmt.setString(1, playerUuid);
+			stmt.setString(2, playerUuid);
+			stmt.setInt(3, MAX_HISTORY_PER_PLAYER);
+			stmt.executeUpdate();
 		}
 	}
 
