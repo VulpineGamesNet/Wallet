@@ -13,7 +13,9 @@ import net.vulpinegames.wallet.world.Positions;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Shop protection. Always on, as in the modern builds:
@@ -35,9 +37,9 @@ public final class ShopProtection {
 		return player.canUseCommand(2, "wallet");
 	}
 
+	/** Sign keys of the shops on the chest at pos; null on a DB error (callers fail closed). */
 	private static List<String> chestShops(WalletServer ks, World world, BlockPos pos) {
-		List<String> keys = ks.shops().getShopsByChestPos(Positions.blockKey(world, pos));
-		return keys;
+		return ks.shops().getShopsByChestPos(Positions.blockKey(world, pos));
 	}
 
 	/** True = cancel the break. */
@@ -73,16 +75,16 @@ public final class ShopProtection {
 		}
 		for (String k : supportedSignKeys) if (!brokenSignKeys.contains(k)) brokenSignKeys.add(k);
 
-		List<ShopDao.Shop> shops = new ArrayList<>();
+		Map<String, ShopDao.Shop> shops = new HashMap<>();
 		boolean serverShop = false;
 		for (String signKey : brokenSignKeys) {
 			ShopDao.Shop shop = ks.shops().getShop(signKey);
 			if (shop != null) {
-				shops.add(shop);
+				shops.put(signKey, shop);
 				if (shop.isServer) serverShop = true;
 			}
 		}
-		if (shops.isEmpty() && brokenSignKeys.isEmpty()) return false;
+		if (brokenSignKeys.isEmpty()) return false;
 
 		if (player != null && !isOp(player)) {
 			if (serverShop) {
@@ -90,7 +92,7 @@ public final class ShopProtection {
 				return true;
 			}
 			String pUuid = player.getCachedUniqueIdString();
-			for (ShopDao.Shop shop : shops) {
+			for (ShopDao.Shop shop : shops.values()) {
 				if (!pUuid.equals(shop.owner)) {
 					player.sendMessage(Msg.red("That shop is not yours."));
 					return true;
@@ -100,7 +102,7 @@ public final class ShopProtection {
 
 		// Allowed - drop the shop rows for whatever just went.
 		for (String signKey : brokenSignKeys) {
-			ShopDao.Shop shop = ks.shops().getShop(signKey);
+			ShopDao.Shop shop = shops.get(signKey);
 			ks.shops().removeShop(signKey);
 			String chestKey = null;
 			if (shop != null) {
@@ -161,10 +163,17 @@ public final class ShopProtection {
 	public static boolean onPlaceNearShop(WalletServer ks, EntityPlayerMP player, World world, BlockPos pos, IBlockState placed) {
 		if (!ks.config().protectShopNeighbors || ks.shopCache().size() == 0) return false;
 		if (SignShop.isWallSign(placed) || !placed.getBlock().hasTileEntity(placed)) return false;
+		// The shop row names one chest half; a hopper under the other half of a
+		// double chest reaches the same inventory, so resolve both halves.
 		List<BlockPos> shopChests = new ArrayList<>();
 		for (EnumFacing dir : EnumFacing.values()) {
 			BlockPos n = pos.offset(dir);
-			if (ks.shopCache().containsChest(Positions.blockKey(world, n))) shopChests.add(n);
+			if (ks.shopCache().containsChest(Positions.blockKey(world, n))) {
+				shopChests.add(n);
+				continue;
+			}
+			BlockPos other = SignShop.otherChestHalf(world, world.getBlockState(n), n);
+			if (other != null && ks.shopCache().containsChest(Positions.blockKey(world, other))) shopChests.add(other);
 		}
 		if (shopChests.isEmpty()) return false;
 		if (isOp(player)) return false;

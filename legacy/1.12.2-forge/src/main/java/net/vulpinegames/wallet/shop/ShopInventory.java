@@ -68,9 +68,16 @@ public interface ShopInventory {
 	/** Over a vanilla IInventory - player inventories, and containers without the capability. */
 	final class Container implements ShopInventory {
 		private final IInventory inv;
+		private final int size;
 
 		public Container(IInventory inv) {
+			this(inv, inv.getSizeInventory());
+		}
+
+		/** Only the first `size` slots - e.g. a player's 36 main slots, without armour and offhand. */
+		public Container(IInventory inv, int size) {
 			this.inv = inv;
+			this.size = Math.min(size, inv.getSizeInventory());
 		}
 
 		private static boolean canStack(ItemStack a, ItemStack b) {
@@ -79,7 +86,7 @@ public interface ShopInventory {
 
 		@Override
 		public int slots() {
-			return inv.getSizeInventory();
+			return size;
 		}
 
 		@Override
@@ -98,7 +105,7 @@ public interface ShopInventory {
 		public ItemStack insert(ItemStack stack) {
 			ItemStack remaining = stack.copy();
 			// merge into matching stacks first, then empty slots - hopper semantics
-			for (int i = 0; i < inv.getSizeInventory() && !remaining.isEmpty(); i++) {
+			for (int i = 0; i < size && !remaining.isEmpty(); i++) {
 				ItemStack existing = inv.getStackInSlot(i);
 				if (!existing.isEmpty() && canStack(existing, remaining) && inv.isItemValidForSlot(i, remaining)) {
 					int space = Math.min(existing.getMaxStackSize(), inv.getInventoryStackLimit()) - existing.getCount();
@@ -109,7 +116,7 @@ public interface ShopInventory {
 					}
 				}
 			}
-			for (int i = 0; i < inv.getSizeInventory() && !remaining.isEmpty(); i++) {
+			for (int i = 0; i < size && !remaining.isEmpty(); i++) {
 				if (inv.getStackInSlot(i).isEmpty() && inv.isItemValidForSlot(i, remaining)) {
 					inv.setInventorySlotContents(i, remaining);
 					remaining = ItemStack.EMPTY;

@@ -431,7 +431,12 @@ public final class WalletCommand extends CommandBase {
 				say(sender, Msg.red("You don't have any coins to deposit"));
 				return;
 			}
-			Coins.remove(player, coins.total);
+			// count() caps at Integer.MAX_VALUE, so removal can fall short; never
+			// credit coins that did not leave the inventory.
+			if (!Coins.remove(player, coins.total)) {
+				say(sender, Msg.red("Could not deposit all coins at once - try /wallet deposit <amount>"));
+				return;
+			}
 			if (!ks().wallets().addBalance(uuid, coins.total)) {
 				Coins.giveEfficient(player, coins.total);
 				say(sender, Msg.red("Deposit failed - your coins were returned"));
@@ -452,7 +457,10 @@ public final class WalletCommand extends CommandBase {
 				.appendSibling(Msg.yellow(Msg.formatBalance(requestedAmount))).appendSibling(Msg.red(". You need exact change.")));
 			return;
 		}
-		Coins.remove(player, requestedAmount);
+		if (!Coins.remove(player, requestedAmount)) {
+			say(sender, Msg.red("Deposit failed - nothing was taken"));
+			return;
+		}
 		if (!ks().wallets().addBalance(uuid, requestedAmount)) {
 			Coins.giveEfficient(player, requestedAmount);
 			say(sender, Msg.red("Deposit failed - your coins were returned"));

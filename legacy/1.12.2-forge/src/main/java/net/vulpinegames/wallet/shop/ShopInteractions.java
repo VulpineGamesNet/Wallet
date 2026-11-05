@@ -236,7 +236,9 @@ public final class ShopInteractions {
 					.appendSibling(Msg.green(price + "$")));
 			}
 		} else {
-			ShopInventory playerInv = new ShopInventory.Container(player.inventory);
+			// Main inventory only (36 slots): worn armour and the offhand item are
+			// never sold out from under the player.
+			ShopInventory playerInv = new ShopInventory.Container(player.inventory, player.inventory.mainInventory.size());
 			List<ShopTemplates.Missing> missingPlayer = ShopTemplates.getMissingItems(playerInv, itemTemplate, strict);
 			if (!missingPlayer.isEmpty()) {
 				player.sendMessage(Msg.empty()
@@ -277,9 +279,9 @@ public final class ShopInteractions {
 
 			List<ItemStack> sold = ShopTemplates.removeItems(playerInv, itemTemplate, strict, false);
 			if (!shop.isInfinite) {
-				List<ItemStack> leftover = ShopTemplates.addItems(chestInv, sold);
-				if (!leftover.isEmpty()) {
-					for (ItemStack stack : leftover) Coins.give(player, stack);
+				List<ItemStack> handBack = ShopTemplates.addAllOrNothing(chestInv, sold);
+				if (!handBack.isEmpty()) {
+					for (ItemStack stack : handBack) Coins.give(player, stack);
 					ks.wallets().addBalance(ownerUuid, price);
 					Wallet.LOGGER.warn("[Wallet] Shop chest at {} refused items on SELL, trade unwound", shop.chestPos);
 					player.sendMessage(Msg.red("The shop chest refused your items - nothing was traded"));

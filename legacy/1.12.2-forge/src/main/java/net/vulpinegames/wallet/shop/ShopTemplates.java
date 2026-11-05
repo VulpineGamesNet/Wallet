@@ -186,6 +186,47 @@ public final class ShopTemplates {
 		return leftover;
 	}
 
+	/**
+	 * Insert every stack or none. On a partial fit whatever already went in is
+	 * taken back out, so the caller can hand the full list back and unwind the
+	 * trade without leaving items behind. Returns the stacks to hand back;
+	 * empty means everything was stored.
+	 */
+	public static List<ItemStack> addAllOrNothing(ShopInventory inv, List<ItemStack> stacks) {
+		List<ItemStack> handBack = new ArrayList<>();
+		List<ItemStack> stored = new ArrayList<>();
+		for (ItemStack stack : stacks) {
+			ItemStack remaining = inv.insert(stack.copy());
+			int left = remaining == null ? 0 : remaining.getCount();
+			if (left > 0) handBack.add(remaining);
+			if (stack.getCount() > left) {
+				ItemStack in = stack.copy();
+				in.setCount(stack.getCount() - left);
+				stored.add(in);
+			}
+		}
+		if (handBack.isEmpty()) return handBack;
+		for (ItemStack in : stored) handBack.addAll(takeBack(inv, in));
+		return handBack;
+	}
+
+	/** Extract up to like.getCount() items exactly equal to `like` (item, meta, NBT). */
+	private static List<ItemStack> takeBack(ShopInventory inv, ItemStack like) {
+		List<ItemStack> got = new ArrayList<>();
+		int need = like.getCount();
+		for (int i = 0; i < inv.slots() && need > 0; i++) {
+			ItemStack s = inv.get(i);
+			if (s == null || s.isEmpty() || !ItemStack.areItemsEqual(s, like) || !ItemStack.areItemStackTagsEqual(s, like)) continue;
+			ItemStack out = inv.extract(i, Math.min(need, s.getCount()));
+			if (!out.isEmpty()) {
+				got.add(out);
+				need -= out.getCount();
+			}
+		}
+		if (need > 0) Wallet.LOGGER.warn("[Wallet] Could not take back {}x {} from a shop container", need, like.getItem().getRegistryName());
+		return got;
+	}
+
 	/** One empty slot per template entry, the modern builds' rule. */
 	public static boolean chestHasSpace(ShopInventory inv, String itemTemplateJson) {
 		if (inv == null) return false;
