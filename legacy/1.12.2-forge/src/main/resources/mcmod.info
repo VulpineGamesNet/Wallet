@@ -1,0 +1,15 @@
+[
+  {
+    "modid": "wallet",
+    "name": "Wallet",
+    "description": "Server-side economy: wallets, coin items and sign shops backed by MySQL or SQLite.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "https://github.com/VulpineGamesNet/Wallet",
+    "authorList": ["VulpineGames"],
+    "credits": "1.12.2 Forge port of the multi-loader Wallet mod.",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
