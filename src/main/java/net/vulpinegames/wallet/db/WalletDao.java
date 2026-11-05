@@ -84,6 +84,35 @@ public final class WalletDao {
 		}
 	}
 
+	public boolean removeBalance(Connection conn, String uuid, int amount) throws SQLException {
+		if (amount <= 0) throw new IllegalArgumentException("Debit must be positive");
+		try (PreparedStatement stmt = conn.prepareStatement(
+			"UPDATE wallet_balances SET balance = balance - ? WHERE uuid = ? AND balance >= ?")) {
+			stmt.setInt(1, amount);
+			stmt.setString(2, uuid);
+			stmt.setInt(3, amount);
+			return stmt.executeUpdate() == 1;
+		}
+	}
+
+	public void addBalance(Connection conn, String uuid, int amount) throws SQLException {
+		if (amount <= 0) throw new IllegalArgumentException("Credit must be positive");
+		String insert = db.isMysql()
+			? "INSERT INTO wallet_balances (uuid, balance) VALUES (?, 0) ON DUPLICATE KEY UPDATE uuid = uuid"
+			: "INSERT INTO wallet_balances (uuid, balance) VALUES (?, 0) ON CONFLICT(uuid) DO NOTHING";
+		try (PreparedStatement stmt = conn.prepareStatement(insert)) {
+			stmt.setString(1, uuid);
+			stmt.executeUpdate();
+		}
+		try (PreparedStatement stmt = conn.prepareStatement(
+			"UPDATE wallet_balances SET balance = balance + ? WHERE uuid = ? AND balance <= ?")) {
+			stmt.setInt(1, amount);
+			stmt.setString(2, uuid);
+			stmt.setInt(3, Integer.MAX_VALUE - amount);
+			if (stmt.executeUpdate() != 1) throw new SQLException("Wallet balance would overflow");
+		}
+	}
+
 	public record TopEntry(String uuid, int balance) {}
 
 	public List<TopEntry> top(int limit) {

@@ -9,7 +9,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * The stable surface for addon mods (WalletPlots, a future archive addon).
+ * The stable surface for addon mods (WalletPlots, WalletAuction).
  * Addons call ONLY this class - never DAOs or internals, so core can evolve
  * freely behind it. Everything is a no-op/failure while the economy is
  * offline; check isAvailable() or just handle the false/exception.
@@ -33,6 +33,12 @@ public final class WalletApi {
 		return ks != null && ks.database().isMysql();
 	}
 
+	/** Changes whenever Wallet opens or reloads its database. */
+	public static long databaseGeneration() {
+		WalletServer ks = ks();
+		return ks != null ? ks.databaseGeneration() : -1;
+	}
+
 	/**
 	 * A pooled connection to the shared database, for addon-owned tables.
 	 * Close it (try-with-resources) - it returns to the pool.
@@ -42,7 +48,7 @@ public final class WalletApi {
 	 * while holding this connection - the second call would wait for the pool's
 	 * only connection and block the server thread until the timeout. Do your
 	 * balance/history calls before you open it or after you close it, or use
-	 * {@link #transaction} to get one connection for the whole unit of work.
+	 * {@link #withTransaction} with the connection-scoped balance/history methods.
 	 */
 	public static Connection connection() throws SQLException {
 		WalletServer ks = ks();
@@ -65,6 +71,50 @@ public final class WalletApi {
 		try (Connection conn = connection()) {
 			return work.run(conn);
 		}
+	}
+
+	/** Commit addon SQL and Wallet balance/history changes as one unit. Do not nest WalletApi calls that borrow another connection. */
+	public static <T> T withTransaction(SqlWork<T> work) throws SQLException {
+		try (Connection conn = connection()) {
+			boolean autoCommit = conn.getAutoCommit();
+			conn.setAutoCommit(false);
+			try {
+				T result = work.run(conn);
+				conn.commit();
+				return result;
+			} catch (SQLException | RuntimeException e) {
+				try {
+					conn.rollback();
+				} catch (SQLException rollbackError) {
+					e.addSuppressed(rollbackError);
+				}
+				throw e;
+			} finally {
+				conn.setAutoCommit(autoCommit);
+			}
+		}
+	}
+
+	/** Guarded debit on the transaction's connection. */
+	public static boolean debit(Connection conn, String uuid, int amount) throws SQLException {
+		WalletServer ks = ks();
+		if (ks == null) throw new SQLException("Wallet economy is offline");
+		return ks.wallets().removeBalance(conn, uuid, amount);
+	}
+
+	/** Credit on the transaction's connection, rejecting a balance overflow. */
+	public static void credit(Connection conn, String uuid, int amount) throws SQLException {
+		WalletServer ks = ks();
+		if (ks == null) throw new SQLException("Wallet economy is offline");
+		ks.wallets().addBalance(conn, uuid, amount);
+	}
+
+	/** History write on the transaction's connection. */
+	public static void recordHistory(Connection conn, String uuid, String type, int amount,
+	                                 String otherPlayer, String description) throws SQLException {
+		WalletServer ks = ks();
+		if (ks == null) throw new SQLException("Wallet economy is offline");
+		ks.history().addEntry(conn, uuid, type, amount, otherPlayer, description);
 	}
 
 	public static int getBalance(String uuid) {

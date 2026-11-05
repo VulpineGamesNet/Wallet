@@ -9,13 +9,16 @@ import net.vulpinegames.wallet.db.WalletDao;
 import net.vulpinegames.wallet.shop.ShopCache;
 
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Everything alive between server start and stop: config, pool, DAOs, caches.
  * One instance per running server, held by Wallet.
  */
 public final class WalletServer {
+	private static final AtomicLong NEXT_GENERATION = new AtomicLong();
 	private final MinecraftServer server;
+	private long databaseGeneration;
 	private WalletConfig config;
 	private final Database database = new Database();
 	private final WalletDao wallets = new WalletDao(database);
@@ -35,6 +38,7 @@ public final class WalletServer {
 			? server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("wallet.db")
 			: configDir.getParent().resolve(ks.config.sqliteFile);
 		ks.database.init(ks.config, ks.sqlitePath);
+		ks.databaseGeneration = NEXT_GENERATION.incrementAndGet();
 		if (ks.database.isAvailable()) {
 			ks.shopCache.reload(ks.shops);
 			Wallet.LOGGER.info("[Wallet] {} shop signs cached", ks.shopCache.size());
@@ -52,6 +56,7 @@ public final class WalletServer {
 		// picks up a backend change in wallet.json. isAvailable() alone stays
 		// true after boot, so a conditional re-init would never fire.
 		database.init(config, sqlitePath);
+		databaseGeneration = NEXT_GENERATION.incrementAndGet();
 		if (database.isAvailable()) shopCache.reload(shops);
 	}
 
@@ -69,6 +74,10 @@ public final class WalletServer {
 
 	public Database database() {
 		return database;
+	}
+
+	public long databaseGeneration() {
+		return databaseGeneration;
 	}
 
 	public WalletDao wallets() {

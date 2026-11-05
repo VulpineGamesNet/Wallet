@@ -65,6 +65,9 @@ public final class WalletCommand {
 				src.sendSystemMessage(Msg.yellow("/wallet deposit <amount>").append(Msg.gray(" - Deposit specific value")));
 				src.sendSystemMessage(Msg.yellow("/wallet history").append(Msg.gray(" - Transaction history")));
 				src.sendSystemMessage(Msg.yellow("/wallet shop help").append(Msg.gray(" - Shop creation guide")));
+				if (Wallet.xplat().isModLoaded("walletauction")) {
+					src.sendSystemMessage(Msg.yellow("/wallet ah").append(Msg.gray(" - Player auction house")));
+				}
 				if (src.hasPermission(2)) {
 					src.sendSystemMessage(Msg.red("/wallet admin").append(Msg.gray(" - Admin commands")));
 				}
@@ -98,6 +101,9 @@ public final class WalletCommand {
 					src.sendSystemMessage(Msg.gold("--- Other ---"));
 					src.sendSystemMessage(Msg.yellow("/wallet history").append(Msg.gray(" - Transaction history")));
 					src.sendSystemMessage(Msg.yellow("/wallet shop help").append(Msg.gray(" - Shop creation guide")));
+				if (Wallet.xplat().isModLoaded("walletauction")) {
+					src.sendSystemMessage(Msg.yellow("/wallet ah").append(Msg.gray(" - Player auction house")));
+				}
 					if (src.hasPermission(2)) {
 						src.sendSystemMessage(Msg.red("/wallet admin").append(Msg.gray(" - Admin commands")));
 					}
