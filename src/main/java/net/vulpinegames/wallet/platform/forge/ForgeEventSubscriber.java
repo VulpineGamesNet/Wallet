@@ -92,6 +92,27 @@ public class ForgeEventSubscriber {
 		}
 	}
 
+	// Coin loot for a mob a real player killed. Spawned straight into the world
+	// rather than added to the drop list, so an InControl "removeall" or a
+	// corpse mod running in the same event cannot eat the coins. Fake players
+	// (mob farms) and kills with no recent player hit earn nothing.
+	@SubscribeEvent(priority = EventPriority.LOWEST)
+	public static void onLivingDrops(net.minecraftforge.event.entity.living.LivingDropsEvent event) {
+		net.minecraft.world.entity.LivingEntity mob = event.getEntity();
+		if (mob instanceof net.minecraft.world.entity.player.Player) return;
+		if (!(mob.level() instanceof ServerLevel level)) return;
+		ServerPlayer killer = event.getSource().getEntity() instanceof net.minecraft.world.entity.player.Player p ? realPlayer(p) : null;
+		if (killer == null && event.isRecentlyHit()
+			&& mob.getKillCredit() instanceof net.minecraft.world.entity.player.Player p) {
+			killer = realPlayer(p);
+		}
+		if (killer == null) return;
+		if (!level.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_DOMOBLOOT)) return;
+		for (net.minecraft.world.item.ItemStack coins : Wallet.onMobKilled(mob)) {
+			mob.spawnAtLocation(coins);
+		}
+	}
+
 	// LOWEST, unlike the click handlers: a claim mod's veto must run first, or
 	// we delete the shop row for a break that never happens.
 	@SubscribeEvent(priority = EventPriority.LOWEST)

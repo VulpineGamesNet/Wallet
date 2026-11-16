@@ -20,7 +20,9 @@ sealed class Loader(val id: String) {
 		override val isFabricLike = true
 		override val modManifestPath = "fabric.mod.json"
 		override val excludedResources = listOf(
-			"META-INF/mods.toml", "META-INF/neoforge.mods.toml", "aw/*.cfg", ".cache", "pack.mcmeta"
+			"META-INF/mods.toml", "META-INF/neoforge.mods.toml", "aw/*.cfg", ".cache", "pack.mcmeta",
+			// Forge 1.20.1 coin loot modifier - its codec only exists on Forge.
+			"data/forge/**", "data/wallet/loot_modifiers/coin_chest.json"
 		)
 
 		override fun generateManifest(ctx: Context): String {
@@ -124,7 +126,10 @@ sealed class Loader(val id: String) {
 
 	object NeoForge : ForgeLike("neoforge") {
 		override val modManifestPath = "META-INF/neoforge.mods.toml"
-		override val excludedResources = (super.excludedResources + "META-INF/mods.toml") + "pack.mcmeta"
+		// Forge 1.20.1 coin loot modifier - its codec only exists on Forge.
+		override val excludedResources = super.excludedResources + listOf(
+			"META-INF/mods.toml", "pack.mcmeta", "data/forge/**", "data/wallet/loot_modifiers/coin_chest.json"
+		)
 	}
 
 	object Forge : ForgeLike("forge") {

@@ -26,6 +26,7 @@ public final class WalletServer {
 	private final HistoryDao history = new HistoryDao(database);
 	private final ShopCache shopCache = new ShopCache();
 	private Path sqlitePath;
+	private net.vulpinegames.wallet.loot.CoinLootStats coinLootStats;
 
 	private WalletServer(MinecraftServer server) {
 		this.server = server;
@@ -39,6 +40,8 @@ public final class WalletServer {
 			: configDir.getParent().resolve(ks.config.sqliteFile);
 		ks.database.init(ks.config, ks.sqlitePath);
 		ks.databaseGeneration = NEXT_GENERATION.incrementAndGet();
+		ks.coinLootStats = new net.vulpinegames.wallet.loot.CoinLootStats(
+			server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("wallet-coinloot.json"));
 		if (ks.database.isAvailable()) {
 			ks.shopCache.reload(ks.shops);
 			Wallet.LOGGER.info("[Wallet] {} shop signs cached", ks.shopCache.size());
@@ -61,6 +64,7 @@ public final class WalletServer {
 	}
 
 	public void stop() {
+		if (coinLootStats != null) coinLootStats.save();
 		database.close();
 	}
 
@@ -90,6 +94,11 @@ public final class WalletServer {
 
 	public HistoryDao history() {
 		return history;
+	}
+
+	/** Coin loot mint counters; null only before start() finished. */
+	public net.vulpinegames.wallet.loot.CoinLootStats coinLootStats() {
+		return coinLootStats;
 	}
 
 	public ShopCache shopCache() {

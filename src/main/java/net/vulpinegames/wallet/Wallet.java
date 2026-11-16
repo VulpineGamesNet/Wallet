@@ -109,6 +109,13 @@ public class Wallet {
 		return net.vulpinegames.wallet.shop.ShopProtection.onBlockBreak(active, player, level, pos, state);
 	}
 
+	/** Coins for a mob a real player killed; empty unless coin loot pays for its type. */
+	public static java.util.List<net.minecraft.world.item.ItemStack> onMobKilled(net.minecraft.world.entity.LivingEntity mob) {
+		if (active == null) return java.util.List.of();
+		String id = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString();
+		return net.vulpinegames.wallet.loot.CoinLoot.rollMob(id, mob.getRandom());
+	}
+
 	public static void onInitializeClient() {
 		LOGGER.info("Initializing {} Client on {}", MOD_ID, Wallet.xplat().loader());
 		LOGGER.debug("{}: { version: {}; friendly_name: {} }", MOD_ID, MOD_VERSION, MOD_FRIENDLY_NAME);

@@ -40,6 +40,8 @@ public final class WalletConfig {
 	 * everyone else would read the raw token.
 	 */
 	public boolean itemChatLinks = false;
+	/** Coins in loot chests and from player-killed mobs. Off unless configured. */
+	public net.vulpinegames.wallet.loot.CoinLootConfig coinLoot = net.vulpinegames.wallet.loot.CoinLootConfig.disabled();
 
 	public static WalletConfig load(Path configDir, Path gameDir) {
 		Path primary = configDir.resolve("wallet.json");
@@ -69,6 +71,9 @@ public final class WalletConfig {
 			if (json.has("strictItemMatch")) cfg.strictItemMatch = json.get("strictItemMatch").getAsBoolean();
 			if (json.has("walletTop")) cfg.walletTop = json.get("walletTop").getAsBoolean();
 			if (json.has("itemChatLinks")) cfg.itemChatLinks = json.get("itemChatLinks").getAsBoolean();
+			// Parsed on its own terms: a bad coinLoot block only switches coin
+			// loot off, it never fails the economy closed.
+			cfg.coinLoot = net.vulpinegames.wallet.loot.CoinLootConfig.parse(json.get("coinLoot"));
 			Wallet.LOGGER.info("[Wallet] Config loaded from {}", source);
 		} catch (IOException | RuntimeException e) {
 			// A file that exists but does not parse is NOT a request for
