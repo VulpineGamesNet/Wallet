@@ -83,8 +83,10 @@ tasks.named("createMinecraftArtifacts") {
 dependencies {
 	implementation("com.zaxxer:HikariCP:5.1.0")
 	implementation("org.mariadb.jdbc:mariadb-java-client:3.4.1")
-	jarJar("com.zaxxer:HikariCP:[5.1.0,)")
-	jarJar("org.mariadb.jdbc:mariadb-java-client:[3.4.1,)")
+	// Pinned: an open range bundles whatever is newest on build day, and
+	// mariadb-java-client 4.0.0 broke the MySQL login on DC (2026-11-16).
+	jarJar("com.zaxxer:HikariCP") { version { strictly("7.1.0") } }
+	jarJar("org.mariadb.jdbc:mariadb-java-client") { version { strictly("3.5.10") } }
 	implementation("org.xerial:sqlite-jdbc:3.46.1.3")
-	jarJar("org.xerial:sqlite-jdbc:[3.46.1,)")
+	jarJar("org.xerial:sqlite-jdbc") { version { strictly("3.53.4.0") } }
 }

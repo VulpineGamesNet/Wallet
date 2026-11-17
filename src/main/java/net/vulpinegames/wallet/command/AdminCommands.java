@@ -98,7 +98,51 @@ final class AdminCommands {
 						.append(Msg.yellow(String.valueOf(ks().shopCache().size())))
 						.append(Msg.gold(" shop signs)")));
 					return 1;
-				}));
+				}))
+
+			.then(Commands.literal("coinloot")
+				.executes(ctx -> coinLoot(ctx, 7))
+				.then(Commands.argument("days", IntegerArgumentType.integer(1, 120))
+					.executes(ctx -> coinLoot(ctx, IntegerArgumentType.getInteger(ctx, "days")))));
+	}
+
+	/** Coins minted by coin loot: per day, then per rule over the whole span. */
+	private static int coinLoot(CommandContext<CommandSourceStack> ctx, int days) {
+		CommandSourceStack src = ctx.getSource();
+		net.vulpinegames.wallet.loot.CoinLootConfig cfg = ks().config().coinLoot;
+		src.sendSystemMessage(Msg.gold("=== Coin loot (UTC days) === ")
+			.append(cfg.enabled
+				? Msg.green("ON: " + cfg.chests.size() + " chest rules, " + cfg.mobs.size() + " mob rules")
+				: Msg.red("OFF")));
+		var stats = ks().coinLootStats();
+		var rows = stats == null ? List.<Map.Entry<String, Map<String, net.vulpinegames.wallet.loot.CoinLootStats.Entry>>>of() : stats.lastDays(days);
+		if (rows.isEmpty()) {
+			src.sendSystemMessage(Msg.gray("Nothing minted yet."));
+			return 1;
+		}
+		Map<String, long[]> bySource = new java.util.TreeMap<>();
+		long grand = 0;
+		for (var day : rows) {
+			long chests = 0, mobs = 0;
+			for (var e : day.getValue().entrySet()) {
+				if (e.getKey().startsWith("chest:")) chests += e.getValue().value; else mobs += e.getValue().value;
+				long[] acc = bySource.computeIfAbsent(e.getKey(), k -> new long[2]);
+				acc[0] += e.getValue().drops;
+				acc[1] += e.getValue().value;
+			}
+			grand += chests + mobs;
+			src.sendSystemMessage(Msg.yellow(day.getKey()).append(Msg.gray(": "))
+				.append(Msg.green(Msg.formatBalance((int) Math.min(Integer.MAX_VALUE, chests + mobs))))
+				.append(Msg.gray("  (chests " + Msg.formatBalance((int) Math.min(Integer.MAX_VALUE, chests))
+					+ ", mobs " + Msg.formatBalance((int) Math.min(Integer.MAX_VALUE, mobs)) + ")")));
+		}
+		src.sendSystemMessage(Msg.gold("By rule, last " + rows.size() + " day(s):"));
+		for (var e : bySource.entrySet()) {
+			src.sendSystemMessage(Msg.yellow("  " + e.getKey()).append(Msg.gray(": " + e.getValue()[0] + " drops, "))
+				.append(Msg.green(Msg.formatBalance((int) Math.min(Integer.MAX_VALUE, e.getValue()[1])))));
+		}
+		src.sendSystemMessage(Msg.gold("Total: ").append(Msg.green(Msg.formatBalance((int) Math.min(Integer.MAX_VALUE, grand)))));
+		return 1;
 	}
 
 	private static int help(CommandContext<CommandSourceStack> ctx) {
@@ -114,6 +158,7 @@ final class AdminCommands {
 		src.sendSystemMessage(Msg.yellow("/wallet admin shop convert-to-infinite").append(Msg.gray(" - Toggle infinite stock on the shop you look at")));
 		src.sendSystemMessage(Msg.yellow("/wallet admin shop server-balance [amount]").append(Msg.gray(" - Show or set the server wallet")));
 		src.sendSystemMessage(Msg.yellow("/wallet admin reload").append(Msg.gray(" - Reload config and caches")));
+		src.sendSystemMessage(Msg.yellow("/wallet admin coinloot [days]").append(Msg.gray(" - Coins minted from chests and mob kills")));
 		return 1;
 	}
 

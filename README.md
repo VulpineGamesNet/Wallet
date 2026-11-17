@@ -127,7 +127,33 @@ schema-is-the-API coupling `archive_event.js` has. The claim-mod integrations
 anything: shops are fully self-protected.
 
 Coin world loot ships as an embedded datapack (`neoforge:add_table` global
-loot modifiers) - active on the 1.21.1 NeoForge target, inert elsewhere.
+loot modifiers) - active on the 1.21.1 NeoForge target, inert elsewhere. On
+Forge 1.20.1 coin loot is config-driven instead - see "Coin loot" below.
+
+## Coin loot (config-driven)
+
+Optional `coinLoot` block in `config/wallet.json`; without it (or with
+`"enabled": false`) nothing changes. Two rule lists:
+
+- `chests`: `match` = regexes against the loot table id, **first matching rule
+  wins**, so list the rarest class first. Wired on Forge 1.20.1 through one
+  global loot modifier (`wallet:coin_chest`); it skips block and entity loot
+  whatever the regex says. Lootr fills each player's copy through the loot
+  table, so every player gets their own roll per container.
+- `mobs`: `entities` = exact entity type ids. Wired on Forge 1.20.1; pays only
+  when a real player (not a FakePlayer) killed the mob or hit it within the
+  vanilla 5 s window, and only with `doMobLoot` on. Coins spawn into the world
+  directly, so InControl `removeall` or corpse mods cannot remove them.
+
+Each rule: `name`, `chance` (0..1 per container / kill), `pool` = weighted
+entries `{ "weight", "coin" (1/10/100/1000/10000), "min", "max" }`. One roll
+per rule. An invalid block logs an error and leaves coin loot off - the
+economy itself is unaffected. `/wallet admin reload` applies changes.
+
+`/wallet admin coinloot [days]` shows what was minted per UTC day and per rule
+(`<world>/wallet-coinloot.json`) - coins are items, so this is the only record
+until they are deposited. DeceasedCraft's rule set, tuned to about $500 per
+3 h of play: `docs/coin-loot-deceasedcraft.json`.
 
 ## Improvements over the scripts
 
